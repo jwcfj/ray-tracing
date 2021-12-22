@@ -1,10 +1,10 @@
-#include <cstdlib> 
-#include <cstdio> 
-#include <cmath> 
-#include <fstream> 
-#include <vector> 
-#include <iostream> 
-#include <cassert> 
+#include <cstdlib>
+#include <cstdio>
+#include <cmath>
+#include <fstream>
+#include <vector>
+#include <iostream>
+#include <cassert>
 
 /* generics */
 template<typename T>
@@ -99,6 +99,16 @@ struct Vec3D {
     return x * v.x + y * v.y + z * v.z;
   };
 
+  /* produto vetorial */
+  Vec3D<T> cross(const Vec3D<T> &v) const {
+    Vec3D<T> r;
+    r.x = y * v.z - z * v.y;
+    r.y = z * v.x - x * v.z;
+    r.z = x * v.y - y * v.x;
+
+    return r;
+  }
+
   /* retorna o vetor printado */
   friend std::ostream & operator << (std::ostream &os, const Vec3D<T> &v) { 
     os << "[" << v.x << " " << v.y << " " << v.z << "]"; 
@@ -123,7 +133,7 @@ struct Sphere {
     this->surfaceColor = sc;
     this->emissionColor = ec;
     this->transparency = transp;
-    this->reflection = reflection;
+    this->reflection = refl;
   }
 
   bool intersect(const Vec3Df &rayOrig, const Vec3Df &rayDir, float &t0, float &t1) const {
@@ -155,4 +165,68 @@ struct Sphere {
  
     return true; 
   };
+};
+
+
+struct Triangle { 
+  Vec3Df vertex1, vertex2, vertex3;
+  Vec3Df surfaceColor, emissionColor;
+  float transparency, reflection;
+
+  /* constructor */
+  Triangle(const Vec3Df &v1, const Vec3Df &v2, const Vec3Df &v3, const Vec3Df &sc, const float &refl = 0, const float &transp = 0, const Vec3Df &ec = 0) {
+    this->vertex1 = v1;
+    this->vertex2 = v2;
+    this->vertex3 = v3;
+    this->surfaceColor = sc;
+    this->emissionColor = ec;
+    this->transparency = transp;
+    this->reflection = refl;
+  }
+
+  bool intersect(Vec3Df rayOrig, Vec3Df rayDir, Triangle* inTriangle, Vec3Df& outIntersectionPoint) {
+    const float EPSILON = 0.0000001;
+
+    Vec3Df vertex1 = inTriangle->vertex1;
+    Vec3Df vertex2 = inTriangle->vertex2;  
+    Vec3Df vertex3 = inTriangle->vertex3;
+    
+    Vec3Df edge1, edge2, h, s, q;
+
+    float a,f,u,v;
+
+    edge1 = vertex2 - vertex1;
+    edge2 = vertex3 - vertex2;
+
+    h = rayDir.cross(edge2);
+    a = edge1.dot(h);
+
+    if (a > -EPSILON && a < EPSILON) {
+      return false;    // This ray is parallel to the triangle
+    };
+
+    f = 1.0/a;
+    s = rayOrig - vertex1;
+    u = f * s.dot(h);
+
+    if (u < 0.0 || u > 1.0) {
+      return false;
+    };
+
+    q = s.cross(edge1);
+    v = f * rayDir.dot(q);
+
+    if (v < 0.0 || u + v > 1.0){
+      return false;
+    };
+    // At this stage we can compute t to find out where the intersection point is on the line.
+    float t = f * edge2.dot(q);
+
+    if (t > EPSILON){ // ray intersection
+      outIntersectionPoint = rayOrig + rayDir * t;
+      return true;
+    } else {  // This means that there is a line intersection but not a ray intersection
+      return false;
+    }
+  }
 }; 
