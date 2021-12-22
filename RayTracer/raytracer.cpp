@@ -1,3 +1,12 @@
+#include <cstdlib> 
+#include <cstdio> 
+#include <cmath> 
+#include <fstream> 
+#include <vector> 
+#include <iostream> 
+#include <cassert> 
+
+/* generics */
 template<typename T>
 struct Vec3D {
   T x, y, z;
@@ -25,7 +34,6 @@ struct Vec3D {
   };
 
   /* methods */
-
   /* calcula o comprimento do vetor */
   T length() const { 
     const T length2 = x * x + y * y + z * z; 
@@ -86,13 +94,65 @@ struct Vec3D {
     return Vec3D<T>(-x, -y, -z);
   };
 
+  /* produto escalar */
   T dot(const Vec3D<T> &v) const {
     return x * v.x + y * v.y + z * v.z;
-  } 
-  
+  };
+
   /* retorna o vetor printado */
   friend std::ostream & operator << (std::ostream &os, const Vec3D<T> &v) { 
     os << "[" << v.x << " " << v.y << " " << v.z << "]"; 
     return os; 
-  } 
+  };
 };
+
+
+typedef Vec3D<float> Vec3Df; 
+ 
+struct Sphere { 
+  Vec3Df center;
+  float radius, radius2;
+  Vec3Df surfaceColor, emissionColor;
+  float transparency, reflection;
+
+  /* constructor */
+  Sphere(const Vec3Df &c, const float &r, const Vec3Df &sc, const float &refl = 0, const float &transp = 0, const Vec3Df &ec = 0) {
+    this->center = c;
+    this->radius = r;
+    this->radius2 = r * r;
+    this->surfaceColor = sc;
+    this->emissionColor = ec;
+    this->transparency = transp;
+    this->reflection = reflection;
+  }
+
+  bool intersect(const Vec3Df &rayOrig, const Vec3Df &rayDir, float &t0, float &t1) const {
+    /* l vai ser o vetor que aponta da origem do raio de luz para o centro */
+    Vec3Df l = center - rayOrig;
+    /* tca vai ser o produto escalar de l com a direção do raio */
+    float tca = l.dot(rayDir);
+
+    /* se tca for igual a 0, quer dizer que l é perpendicular à direção do raio, logo não intersecta */
+    /* se tca for menor a 0, quer dizer que l é obtuso à direção do raio, logo, tem componentes x e y, 
+    porém em sentindo contrário à esfera, logo, não intersecta */
+    if (tca < 0) {
+      return false;
+    }
+
+    /* fórmula para descobrir se um ponto pertence a uma esfera ->||p(t) - c||² = r² */
+    /* l.dot(l) calcula ||l||² e tca * tca calcula o comprimento */
+    float d2 = l.dot(l) - tca * tca; 
+    
+    /* se d > r, o raio n intersecta a esfera */
+    if (d2 > radius2) {
+      return false;
+    }
+
+    /* caso contratrio, intersecta, podendo ter 1 ou 2 pontos de intersecção */
+    float thc = sqrt(radius2 - d2); 
+    t0 = tca - thc; 
+    t1 = tca + thc; 
+ 
+    return true; 
+  };
+}; 
